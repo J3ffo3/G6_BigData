@@ -1,4 +1,4 @@
-# Ignorar datos pesados
+# ignore heavy data
 data/raw/*
 !data/raw/.gitkeep
 
@@ -8,7 +8,7 @@ data/interim/*
 data/processed/*
 !data/processed/.gitkeep
 
-# Ignorar ambientes virtuales y archivos de sistema
+# Ignore virtual environments and system files
 venv/
 .DS_Store
 __pycache__/

@@ -3,6 +3,17 @@
 
 ---
 
+### Team 6 Members
+
+| # | Team Member |
+| --- | --- |
+| 1 | Iam Anthony Marcelo Alvarez Orellana |
+| 2 | Jeffrey Ulises Diaz Villanueva |
+| 3 | Paula Jimena Mancilla Cienfuegos |
+| 4 | Fernando Samuel Paredes Espinoza |
+
+---
+
 ### 1. Project Proposal
 
 * **Domain:** Global Digital Video Game Marketplace (Steam).

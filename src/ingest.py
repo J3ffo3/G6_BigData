@@ -1,52 +1,83 @@
 import pandas as pd
 import glob
 import os
+import kagglehub
+import shutil
 
-def run_ingestion(limit_files=500): # Limitamos a 500 archivos para la V1
-    print("🚀 Iniciando pipeline de ingesta masiva...")
+def run_ingestion(limit_files=500):
+    print("Starting Automated Big Data Ingestion Pipeline...")
+
+    # 1. Automated Download from Kaggle
+    print("Downloading datasets from Kaggle...")
+    catalog_path = kagglehub.dataset_download("artermiloff/steam-games-dataset")
+    reviews_path = kagglehub.dataset_download("artermiloff/steam-games-reviews-2024")
     
-    raw_reviews_path = 'data/raw/SteamReviews2024' 
-    metadata_path = 'data/raw/games_may2024_full.csv'   # El archivo de catálogo
-    processed_path = 'data/processed'
+    raw_dir = 'data/raw'
+    processed_dir = 'data/processed'
+    metadata_raw_dir = os.path.join(raw_dir, 'catalog')
+    reviews_raw_dir = os.path.join(raw_dir, 'reviews')
 
-    # 1. Obtener la lista de todos los archivos de reviews
-    all_files = glob.glob(os.path.join(raw_reviews_path, "*.csv"))
-    print(f"📂 Se encontraron {len(all_files)} archivos de juegos.")
+    if not os.path.exists(metadata_raw_dir):
+        os.makedirs(metadata_raw_dir)
+    if not os.path.exists(reviews_raw_dir):
+        os.makedirs(reviews_raw_dir)
 
-    # 2. Leer una muestra para la V1
+    # Save downloaded source files under data/raw for reproducibility
+    metadata_source_file = os.path.join(catalog_path, 'games_may2024_full.csv')
+    metadata_file = os.path.join(metadata_raw_dir, 'games_may2024_full.csv')
+    if os.path.exists(metadata_source_file):
+        shutil.copy2(metadata_source_file, metadata_file)
+
+    source_reviews_files = glob.glob(os.path.join(reviews_path, "**/*.csv"), recursive=True)
+    for src_file in source_reviews_files:
+        relative_path = os.path.relpath(src_file, reviews_path)
+        dst_file = os.path.join(reviews_raw_dir, relative_path)
+        os.makedirs(os.path.dirname(dst_file), exist_ok=True)
+        shutil.copy2(src_file, dst_file)
+
+    # Process reviews from the raw layer
+    raw_reviews_pattern = os.path.join(reviews_raw_dir, "**/*.csv")
+
+    # 2. Inventory of Review Files in raw
+    all_files = glob.glob(raw_reviews_pattern, recursive=True)
+    print(f"Found {len(all_files)} game review files.")
+
+    # 3. Processing V1 Subset
     subset_files = all_files[:limit_files]
-    print(f"🧪 Procesando una muestra de {limit_files} archivos...")
+    print(f"🧪 Processing a sample of {limit_files} files...")
 
     list_df = []
     for f in subset_files:
         try:
-            temp_df = pd.read_csv(f)
+            # We only read necessary columns to save memory during ingestion
+            temp_df = pd.read_csv(f, usecols=['recommendationid', 'author_steamid', 'voted_up', 'author_playtime_forever'])
             appid = os.path.basename(f).replace('.csv', '')
             temp_df['AppID'] = appid
             list_df.append(temp_df)
-        except Exception as e:
+        except Exception:
             continue
 
-    # 3. Concatenar todas las reviews en un solo DataFrame
+    # 4. Vertical Integration (Concatenation)
     reviews_df = pd.concat(list_df, ignore_index=True)
-    print(f"✅ Se cargaron {len(reviews_df)} filas de reviews.")
-
-    # 4. Cargar Metadata y unir
-    print("📦 Uniendo con metadatos del catálogo...")
-    games_df = pd.read_csv(metadata_path)
     
-    # Asegurar que el appid sea del mismo tipo para el join
+    # 5. Horizontal Integration (Join with Metadata)
+    print("Joining with Catalog Metadata...")
+    games_df = pd.read_csv(metadata_file, usecols=['AppID', 'name', 'genres', 'tags'])
+    
     reviews_df['AppID'] = reviews_df['AppID'].astype(str)
     games_df['AppID'] = games_df['AppID'].astype(str)
 
-    v1_dataset = pd.merge(reviews_df, games_df[['AppID', 'name', 'genres']], on='AppID', how='inner')
+    v1_dataset = pd.merge(reviews_df, games_df, on='AppID', how='inner')
 
-    # 5. Guardar en Parquet
-    if not os.path.exists(processed_path):
-        os.makedirs(processed_path)
+    # 6. Storage in Big Data Format (Parquet)
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
     
-    v1_dataset.to_parquet(f'{processed_path}/steam_v1.parquet', index=False)
-    print(f"🏁 V1 guardada exitosamente. Total de filas finales: {len(v1_dataset)}")
+    output_file = f'{processed_dir}/steam_v1.parquet'
+    v1_dataset.to_parquet(output_file, index=False)
+    
+    print(f"V1 saved successfully at: {output_file}")
+    print(f"📊 Final Record Count: {len(v1_dataset)}")
 
 if __name__ == "__main__":
     run_ingestion()
