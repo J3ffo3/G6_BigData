@@ -1,7 +1,12 @@
 # Ignorar datos pesados
 data/raw/*
+!data/raw/.gitkeep
+
 data/interim/*
+!data/interim/.gitkeep
+
 data/processed/*
+!data/processed/.gitkeep
 
 # Ignorar ambientes virtuales y archivos de sistema
 venv/
