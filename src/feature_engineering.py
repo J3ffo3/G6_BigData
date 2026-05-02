@@ -72,8 +72,22 @@ def normalize_multilabel(value) -> list[str]:
 
 
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame, str]:
+    if not os.path.exists(CATALOG_PATH):
+        raise FileNotFoundError(
+            f"Catalog CSV not found at {CATALOG_PATH}. Run ingestion first."
+        )
+
     catalog_df = pd.read_csv(CATALOG_PATH)
-    parquet_path = PARQUET_FULL if os.path.exists(PARQUET_FULL) else PARQUET_V1
+    if os.path.exists(PARQUET_FULL):
+        parquet_path = PARQUET_FULL
+    elif os.path.exists(PARQUET_V1):
+        parquet_path = PARQUET_V1
+    else:
+        raise FileNotFoundError(
+            f"No parquet dataset found at {PARQUET_FULL} or {PARQUET_V1}. "
+            "Run ingestion first."
+        )
+
     reviews_df = pd.read_parquet(parquet_path)
     catalog_df["AppID"] = catalog_df["AppID"].astype(str)
     reviews_df["AppID"] = reviews_df["AppID"].astype(str)
@@ -197,7 +211,12 @@ def fit_pca(X: np.ndarray, n_components: int = 30) -> tuple[PCA, dict]:
 
 
 def fit_svd(X: sparse.csr_matrix, n_components: int = 200) -> tuple[TruncatedSVD, dict]:
-    n_components = min(n_components, X.shape[1] - 1, X.shape[0] - 1)
+    max_components = min(X.shape[1] - 1, X.shape[0] - 1)
+    if max_components < 1:
+        raise ValueError(
+            "TruncatedSVD requires at least 2 samples and 2 features in the input matrix."
+        )
+    n_components = min(n_components, max_components)
     model = TruncatedSVD(n_components=n_components, random_state=42)
     Xp = model.fit_transform(X)
     # Reconstruction in the original sparse space using V^T
