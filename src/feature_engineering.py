@@ -219,11 +219,19 @@ def fit_svd(X: sparse.csr_matrix, n_components: int = 200) -> tuple[TruncatedSVD
     n_components = min(n_components, max_components)
     model = TruncatedSVD(n_components=n_components, random_state=42)
     Xp = model.fit_transform(X)
-    # Reconstruction in the original sparse space using V^T
-    Xrec = Xp @ model.components_
-    diff = X - Xrec
     frob_full = float(sparse.linalg.norm(X, ord="fro"))
-    frob_err = float(np.linalg.norm(diff, ord="fro"))
+
+    # Compute the reconstruction error in chunks to avoid materializing a dense
+    # (n_samples x n_features) reconstruction matrix for large sparse TF-IDF data.
+    chunk_size = 1024
+    sq_err = 0.0
+    for start in range(0, X.shape[0], chunk_size):
+        end = min(start + chunk_size, X.shape[0])
+        Xrec_chunk = Xp[start:end] @ model.components_
+        diff_chunk = X[start:end].toarray() - Xrec_chunk
+        sq_err += float(np.sum(diff_chunk ** 2))
+
+    frob_err = float(np.sqrt(sq_err))
     metrics = {
         "n_components": int(n_components),
         "explained_variance_ratio": model.explained_variance_ratio_.tolist(),
