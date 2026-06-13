@@ -21,6 +21,22 @@
 \maketitle
 \onehalfspacing
 
+\section{Prior Milestones Summary}
+
+This report closes the project pipeline by adding the recommendation layer on top of the dataset, features, and clusters produced in prior milestones.
+
+\begin{longtable}{p{0.12\linewidth}p{0.28\linewidth}p{0.52\linewidth}}
+\toprule
+\textbf{Week} & \textbf{Milestone} & \textbf{Key output used here} \\
+\midrule
+3 & Dataset Charter \& EDA & \texttt{steam\_v1.parquet}: 480,025 interaction records. Star schema on \texttt{AppID}. \\
+5 & Feature Engineering & \texttt{X\_numeric} (87,806$\times$26), \texttt{X\_text} (87,806$\times$5,000). TF-IDF vocabulary and SVD models saved in \texttt{models.pkl}. \\
+7 & Prototype Clustering & K=6 cluster labels (\texttt{cluster\_labels\_k6.npy}) with semantic segments: Creative Tools, Action, Narrative, Strategy, Local MP, Casual. Silhouette=0.077. \\
+\midrule
+\textbf{10} & \textbf{Recommendation (this report)} & \textbf{4 recommendation systems. HR@K evaluation on 12,389 users. Best: Hybrid $\alpha{=}0.3$, HR@10=0.2569.} \\
+\bottomrule
+\end{longtable}
+
 \section{Task Framing}
 
 \textbf{Task type:} Recommendation.

@@ -131,23 +131,19 @@ def _sse(X: np.ndarray, labels: np.ndarray, centroids: np.ndarray) -> float:
 def lloyds_one_iteration(
     X: np.ndarray, K: int, seed: int
 ) -> dict:
-    """One assignment+update step from a random init; returns J_before and J_after."""
     rng = np.random.default_rng(seed)
     idx = rng.choice(len(X), K, replace=False)
     centroids = X[idx].copy()
 
-    # Assignment step (J before centroid update)
     dists = np.linalg.norm(X[:, None, :] - centroids[None, :, :], axis=2)
     labels = np.argmin(dists, axis=1)
     j_before = _sse(X, labels, centroids)
 
-    # Update step
     new_centroids = np.array([
         X[labels == k].mean(axis=0) if np.any(labels == k) else centroids[k]
         for k in range(K)
     ])
 
-    # Re-assign with new centroids (J after)
     dists2 = np.linalg.norm(X[:, None, :] - new_centroids[None, :, :], axis=2)
     labels2 = np.argmin(dists2, axis=1)
     j_after = _sse(X, labels2, new_centroids)

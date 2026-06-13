@@ -1,0 +1,189 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{setspace}
+\usepackage{enumitem}
+
+\title{Semester Project: Domain Discovery, Recommendation, and Graph Intelligence\\
+\large Milestone: Prototype-Based Clustering --- K-Means Experiments (Week 7)}
+\author{Iam Anthony Marcelo Alvarez Orellana \\ Jeffrey Ulises Diaz Villanueva \\ Paula Jimena Mancilla Cienfuegos \\ Fernando Samuel Paredes Espinoza}
+\date{}
+
+\begin{document}
+\maketitle
+\onehalfspacing
+
+% -------------------------------------------------------------------
+\section{Prior Milestones Summary}
+% -------------------------------------------------------------------
+
+This report builds on the dataset and feature engineering work from Weeks 3 and 5. The table below summarises what each milestone contributed to the project pipeline.
+
+\begin{longtable}{p{0.12\linewidth}p{0.25\linewidth}p{0.55\linewidth}}
+\toprule
+\textbf{Week} & \textbf{Milestone} & \textbf{Key output used here} \\
+\midrule
+3 & Dataset Charter \& EDA & \texttt{steam\_v1.parquet}: 480,025 interaction records. Star schema on \texttt{AppID}. 5 EDA charts. \\
+5 & Feature Engineering & Three feature matrices: \texttt{X\_numeric} (87,806$\times$26), \texttt{X\_categorical} (87,806$\times$5,000), \texttt{X\_text} (87,806$\times$5,000). PCA $k{=}12$ for 90\% numeric variance. \\
+\midrule
+\textbf{7} & \textbf{Clustering (this report)} & \textbf{Tags-only binary matrix. K-means K=6. Cluster labels saved to \texttt{artifacts/clustering/}.} \\
+\bottomrule
+\end{longtable}
+
+% -------------------------------------------------------------------
+\section{Clustering Setup}
+% -------------------------------------------------------------------
+
+\textbf{Representation choice:} Instead of the full-text \texttt{X\_text} matrix from Week 5, clustering uses a focused \textbf{tags-only} binary matrix built from the union of \texttt{genres}, \texttt{categories}, and \texttt{tags} columns. Rationale: tag tokens are hand-curated community labels that carry precise semantic content (e.g., \textit{roguelike}, \textit{local co-op}) with less noise than free-text descriptions.
+
+\textbf{Vocabulary filtering:} Tokens appearing in fewer than 30 games are discarded. This reduces the vocabulary to 5,397 dimensions and removes typos, language variants, and extremely rare tags that would distort cluster boundaries.
+
+\textbf{Input universe:} 69,943 games with non-empty tag fields (out of 87,806 in the full catalog). Games without any tag data are excluded from clustering; they can still receive recommendations via the content-based baseline (Week 10).
+
+% -------------------------------------------------------------------
+\section{Lloyd's Algorithm --- Manual Descent Verification}
+% -------------------------------------------------------------------
+
+To verify that sklearn's K-means correctly implements Lloyd's algorithm (assignment + centroid update reduces the SSE objective), we manually compute one iteration from 5 different random initializations on a PCA-reduced numeric space (10D, same 23 numeric features as Week 5).
+
+\textbf{Objective:} $J = \sum_{k=1}^{K} \sum_{x \in C_k} \| x - \mu_k \|^2$
+
+\textbf{Monotone descent property:} Each assignment+update step guarantees $J_{\text{after}} \leq J_{\text{before}}$.
+
+\begin{longtable}{crrrl}
+\toprule
+\textbf{Seed} & \textbf{$J_\text{before}$} & \textbf{$J_\text{after}$} & \textbf{$\Delta J$} & \textbf{Descent?} \\
+\midrule
+1 & 890,570 & 665,135 & $-$225,435 & Yes \\
+2 & 1,062,161 & 898,191 & $-$163,970 & Yes \\
+3 & 1,114,696 & 663,283 & $-$451,413 & Yes \\
+4 & 1,151,948 & 882,097 & $-$269,851 & Yes \\
+5 & 1,038,707 & 718,923 & $-$319,784 & Yes \\
+\bottomrule
+\end{longtable}
+
+All 5 seeds confirm strict descent, verifying the implementation is correct before proceeding to the full tag-space clustering.
+
+% -------------------------------------------------------------------
+\section{Ablation Study --- Representation Variants}
+% -------------------------------------------------------------------
+
+Three representation variants are compared on K=6 K-means (n\_init=10, k-means++) to justify the choice of SVD + L2 normalization.
+
+\begin{longtable}{p{0.32\linewidth}rr}
+\toprule
+\textbf{Variant} & \textbf{Silhouette} & \textbf{Largest cluster (\%)} \\
+\midrule
+Raw sparse (binary, 5,397D) & 0.026 & 24.9\% \\
+SVD only (50D dense) & 0.064 & 21.7\% \\
+SVD + L2 normalization (chosen) & \textbf{0.077} & 22.0\% \\
+\bottomrule
+\end{longtable}
+
+\textbf{Interpretation:}
+\begin{itemize}[leftmargin=*]
+  \item Raw sparse: K-means uses Euclidean distance, which behaves poorly on high-dimensional binary vectors. Cluster quality is lowest.
+  \item SVD (50D): Dimensionality reduction concentrates variance and substantially improves silhouette, confirming that latent tag structure is meaningful.
+  \item SVD + L2: L2 normalization maps all game vectors to the unit hypersphere, converting Euclidean distance to cosine similarity. This is appropriate for tag vectors where the relevant signal is relative tag co-occurrence pattern, not absolute count magnitude.
+\end{itemize}
+
+% -------------------------------------------------------------------
+\section{K-Sweep --- Choosing the Number of Clusters}
+% -------------------------------------------------------------------
+
+K-means (SVD + L2, n\_init=10) is evaluated for $K \in \{4, 6, 8, 10\}$.
+
+\begin{longtable}{crrrr}
+\toprule
+\textbf{K} & \textbf{Inertia} & \textbf{Silhouette} & \textbf{Min cluster} & \textbf{Max cluster} \\
+\midrule
+4 & 31,128 & 0.0796 & 13,592 & 21,442 \\
+\textbf{6} & \textbf{29,175} & \textbf{0.0767} & \textbf{4,773} & \textbf{15,353} \\
+8 & 27,664 & 0.0836 & 958 & 12,314 \\
+10 & 26,357 & 0.0946 & 958 & 11,747 \\
+\bottomrule
+\end{longtable}
+
+\textbf{K=6 selection rationale:}
+\begin{itemize}[leftmargin=*]
+  \item K=8 and K=10 produce higher silhouette but at the cost of very small clusters (958 games, $\sim$1.4\%), which are too sparse to be actionable for downstream recommendation segmentation.
+  \item K=4 and K=6 have more balanced distributions. K=6 provides finer semantic granularity without over-fragmenting.
+  \item Inertia decreases monotonically (elbow between K=6 and K=8), confirming K=6 as a pragmatic trade-off between compactness and interpretability.
+\end{itemize}
+
+% -------------------------------------------------------------------
+\section{Final Clustering --- K=6 Cluster Profiles}
+% -------------------------------------------------------------------
+
+\textbf{Configuration:} K-means, K=6, SVD+L2 (50D), n\_init=10, random\_state=42.\\
+\textbf{Silhouette:} 0.0767 \quad \textbf{Inertia:} 29,175
+
+The low absolute silhouette value is expected in a high-diversity game catalog: Steam titles span extreme genres, and many games are genuinely ambiguous across clusters. The relative improvement from 0.026 (raw) to 0.077 (SVD+L2) is what matters.
+
+\begin{longtable}{p{0.05\linewidth}p{0.14\linewidth}p{0.14\linewidth}p{0.55\linewidth}}
+\toprule
+\textbf{C} & \textbf{Size} & \textbf{Share} & \textbf{Top tags by lift (lift $= P(\text{tag}|C_k) / P(\text{tag})$)} \\
+\midrule
+0 & 4,773 & 6.8\% & video production (14.65$\times$), audio production (14.65$\times$), photo editing (14.65$\times$), animation \& modeling (14.47$\times$) $\rightarrow$ \textit{Creative \& Dev Tools} \\
+1 & 15,353 & 22.0\% & combat (3.17$\times$), action-adventure (3.12$\times$), side scroller (3.08$\times$), action (3.07$\times$) $\rightarrow$ \textit{Action} \\
+2 & 13,576 & 19.4\% & text-based (3.99$\times$), story rich (3.06$\times$), great soundtrack (2.85$\times$) $\rightarrow$ \textit{Narrative \& Adventure} \\
+3 & 14,060 & 20.1\% & card game (3.77$\times$), logic (3.70$\times$), building (3.27$\times$) $\rightarrow$ \textit{Strategy \& Puzzle} \\
+4 & 12,112 & 17.3\% & local co-op (5.77$\times$), 4 player local (5.77$\times$), shared/split screen (5.75$\times$) $\rightarrow$ \textit{Local Multiplayer} \\
+5 & 10,069 & 14.4\% & hidden object (6.45$\times$), point \& click (5.52$\times$) $\rightarrow$ \textit{Casual / Hidden Object} \\
+\bottomrule
+\end{longtable}
+
+\textbf{Cluster C0 note:} Creative tools (video editors, audio software) appear as a distinct cluster because they carry highly specific tags absent from entertainment games. Their small size (6.8\%) reflects their niche presence in the Steam catalog.
+
+% -------------------------------------------------------------------
+\section{ARI Stability Across Seeds}
+% -------------------------------------------------------------------
+
+Adjusted Rand Index (ARI) is computed for all pairs of K=6 runs across 5 different random seeds to measure whether the clustering structure is robust to initialization.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Mean off-diagonal ARI:} 0.4902
+  \item \textbf{Minimum pairwise ARI:} 0.3423
+\end{itemize}
+
+An ARI of $\sim$0.49 indicates moderate-to-good agreement between runs: the broad semantic segments (Action, Strategy, Local MP) are consistently recovered across seeds, while some boundary games fluctuate between similar clusters (e.g., Action vs.\ Narrative games with action combat). This level of stability is acceptable for a 69,943-game universe with naturally overlapping genres.
+
+% -------------------------------------------------------------------
+\section{Reproducible Pipeline}
+% -------------------------------------------------------------------
+
+\begin{verbatim}
+# From project root
+python src/ingest.py                # Step 1 - ingestion (if not done)
+python src/feature_engineering.py   # Step 2 - feature matrices (Week 5)
+python src/clustering_week7.py      # Step 3 - clustering experiments
+\end{verbatim}
+
+Artifacts written to \texttt{artifacts/clustering/}:
+\begin{itemize}[leftmargin=*]
+  \item \texttt{cluster\_labels\_k6.npy} --- integer cluster label per tagged game (69,943 entries)
+  \item \texttt{cluster\_appids.npy} --- AppID array aligned to cluster labels
+  \item \texttt{clustering\_metrics.json} --- all numeric results (Lloyd's, ablation, sweep, ARI)
+  \item \texttt{cluster\_profiles.json} --- top-5 tags by lift per cluster
+\end{itemize}
+
+All outputs are deterministic (\texttt{random\_state=42}).
+
+% -------------------------------------------------------------------
+\section{Ethics and Access Note}
+% -------------------------------------------------------------------
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Data provenance:} Clustering operates solely on game catalog metadata (tags, genres, categories). No user data is involved at this stage.
+  \item \textbf{Authorization:} CC0 license; unrestricted academic use.
+  \item \textbf{Cluster bias:} The tag vocabulary reflects Steam's community-curated labels. Tags applied to English-language AAA titles dominate by frequency. Under-tagged games (often non-English or very niche titles) may fall into catch-all clusters. This is a known limitation of community tagging systems and does not affect downstream recommendation correctness, which operates on a separate interaction signal.
+\end{itemize}
+
+\end{document}

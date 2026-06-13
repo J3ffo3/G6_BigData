@@ -102,17 +102,10 @@ def load_interactions() -> tuple[pd.DataFrame, pd.DataFrame]:
 def build_interaction_universe(
     interactions: pd.DataFrame, catalog: pd.DataFrame
 ) -> tuple[pd.DataFrame, list[str], list[str]]:
-    """
-    Filter to positive interactions; align to games present in both catalog and parquet.
-    Returns:
-        pos_df   — positive interactions (user, game)
-        user_ids — sorted list of unique user IDs
-        game_ids — sorted list of unique game AppIDs
-    """
+    """Filter to positive interactions; align to games present in both catalog and parquet."""
     pos = interactions[interactions["voted_up"] == 1][["author_steamid", "AppID"]].copy()
     pos = pos.drop_duplicates()
 
-    # Keep only games that also appear in the catalog
     catalog_appids = set(catalog["AppID"].unique())
     pos = pos[pos["AppID"].isin(catalog_appids)]
 
@@ -126,12 +119,7 @@ def build_interaction_universe(
 def train_test_split(
     pos_df: pd.DataFrame, user_ids: list[str], rng: np.random.Generator
 ) -> tuple[dict[str, list[str]], dict[str, str]]:
-    """
-    Hold out 1 positive item per qualifying user (>= MIN_INTERACTIONS).
-    Returns:
-        train_dict  : {user_id: [list of train game AppIDs]}
-        held_out    : {user_id: held-out game AppID}
-    """
+    """Hold out 1 positive item per qualifying user (>= MIN_INTERACTIONS)."""
     user_games = pos_df.groupby("author_steamid")["AppID"].apply(list).to_dict()
     train_dict: dict[str, list[str]] = {}
     held_out: dict[str, str] = {}
@@ -201,7 +189,6 @@ def hit_rate_at_k(
             continue
         ui = user_idx[uid]
         scores = scores_matrix[ui].copy()
-        # Mask train items
         train_items = train_matrix[ui].indices
         scores[train_items] = -np.inf
         top_k = np.argpartition(scores, -k)[-k:]
@@ -226,7 +213,7 @@ def popularity_baseline(
     pop_map = catalog.set_index("AppID")["recommendations"].fillna(0).to_dict()
     scores = np.array([float(pop_map.get(gid, 0)) for gid in game_ids], dtype=float)
     # Broadcast as a (1, n_games) matrix for uniform interface with hit_rate_at_k
-    return np.tile(scores, (1, 1))   # shape (1, n_games) — same score for every user
+    return np.tile(scores, (1, 1))
 
 
 def eval_popularity(
@@ -238,7 +225,6 @@ def eval_popularity(
 ) -> dict:
     print("\n--- Baseline 1: Popularity ---")
     pop_scores_1d = popularity_baseline(catalog, game_ids)[0]  # (n_games,)
-    # Build matrix: same scores for every user
     n_users = len(user_ids)
     pop_matrix = np.tile(pop_scores_1d, (n_users, 1))  # (n_users, n_games)
 
@@ -404,16 +390,13 @@ def eval_mf(
     user_idx_all = {u: i for i, u in enumerate(user_ids)}
     q_indices = [user_idx_all[u] for u in qualifying_users]
 
-    # Dense sub-matrix: qualifying users x all games
     R_sub = R_train_full[q_indices].toarray().astype(np.float32)
 
     sub_rng = np.random.default_rng(RANDOM_STATE + k_dim)
     P, Q, loss_history = train_mf(R_sub, k=k_dim, rng=sub_rng)
 
-    # Build score matrix for qualifying users
     pred_matrix = P @ Q.T  # (n_qualifying x n_games)
 
-    # Rebuild sparse sub-matrix for masking
     R_sub_sparse = sparse.csr_matrix(R_sub)
 
     # Map back to full user indices for hit_rate_at_k

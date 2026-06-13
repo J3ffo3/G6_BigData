@@ -20,6 +20,20 @@
 \maketitle
 \onehalfspacing
 
+\section{Prior Milestone Summary}
+
+This report builds on the dataset ingestion and EDA work from Week 3.
+
+\begin{longtable}{p{0.12\linewidth}p{0.25\linewidth}p{0.55\linewidth}}
+\toprule
+\textbf{Week} & \textbf{Milestone} & \textbf{Key output used here} \\
+\midrule
+3 & Dataset Charter \& EDA & \texttt{steam\_v1.parquet}: 480,025 interaction records. Star schema on \texttt{AppID}. Games catalog CSV with metadata (tags, genres, price, playtime, etc.). \\
+\midrule
+\textbf{5} & \textbf{Feature Engineering (this report)} & \textbf{Three feature matrices from catalog. PCA and SVD compression parameters.} \\
+\bottomrule
+\end{longtable}
+
 \section{Overview}
 
 This milestone covers the construction of the three feature matrices that serve as input to all downstream models (clustering, recommendation, graph analysis), and the dimensionality reduction analysis used to select compression parameters.
