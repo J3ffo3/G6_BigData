@@ -1,0 +1,118 @@
+{
+  "n_games": 69943,
+  "n_tag_dimensions": 5397,
+  "svd_components": 50,
+  "lloyds_demo": [
+    {
+      "seed": 1,
+      "J_before": 890570.0,
+      "J_after": 665135.1,
+      "delta_J": -225435.0,
+      "descent_ok": true
+    },
+    {
+      "seed": 2,
+      "J_before": 1062161.0,
+      "J_after": 898191.1,
+      "delta_J": -163970.0,
+      "descent_ok": true
+    },
+    {
+      "seed": 3,
+      "J_before": 1114695.5,
+      "J_after": 663283.3,
+      "delta_J": -451412.0,
+      "descent_ok": true
+    },
+    {
+      "seed": 4,
+      "J_before": 1151947.5,
+      "J_after": 882097.1,
+      "delta_J": -269850.0,
+      "descent_ok": true
+    },
+    {
+      "seed": 5,
+      "J_before": 1038707.2,
+      "J_after": 718922.8,
+      "delta_J": -319784.0,
+      "descent_ok": true
+    }
+  ],
+  "ablation": [
+    {
+      "variant": "Raw sparse (binary tags)",
+      "silhouette": 0.026,
+      "largest_cluster_share_pct": 24.9
+    },
+    {
+      "variant": "SVD only (50D dense)",
+      "silhouette": 0.064,
+      "largest_cluster_share_pct": 21.7
+    },
+    {
+      "variant": "SVD + L2 (chosen)",
+      "silhouette": 0.077,
+      "largest_cluster_share_pct": 22.0
+    }
+  ],
+  "k_sweep": [
+    {
+      "K": 4,
+      "inertia": 31128.0,
+      "silhouette": 0.0796,
+      "min_cluster_size": 13592,
+      "max_cluster_size": 21442
+    },
+    {
+      "K": 6,
+      "inertia": 29175.0,
+      "silhouette": 0.0767,
+      "min_cluster_size": 4773,
+      "max_cluster_size": 15353
+    },
+    {
+      "K": 8,
+      "inertia": 27664.0,
+      "silhouette": 0.0836,
+      "min_cluster_size": 958,
+      "max_cluster_size": 12314
+    },
+    {
+      "K": 10,
+      "inertia": 26357.0,
+      "silhouette": 0.0946,
+      "min_cluster_size": 958,
+      "max_cluster_size": 11747
+    }
+  ],
+  "final_k6": {
+    "inertia": 29175.0,
+    "silhouette": 0.0767,
+    "cluster_sizes": [
+      4773,
+      15353,
+      13576,
+      14060,
+      12112,
+      10069
+    ]
+  },
+  "ari_stability": {
+    "mean_ari": 0.4902,
+    "min_ari": 0.3423,
+    "n_seed_pairs": 10,
+    "all_ari_scores": [
+      0.3694,
+      0.3616,
+      0.3423,
+      0.3458,
+      0.5446,
+      0.7117,
+      0.4069,
+      0.5646,
+      0.7382,
+      0.5171
+    ]
+  }
+}

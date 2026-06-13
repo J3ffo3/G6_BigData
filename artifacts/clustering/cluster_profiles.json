@@ -1,0 +1,188 @@
+[
+  {
+    "cluster": 0,
+    "size": 4773,
+    "top_tags_by_lift": [
+      {
+        "tag": "video production: 31",
+        "lift": 14.65,
+        "cluster_freq": 0.006
+      },
+      {
+        "tag": "audio production: 31",
+        "lift": 14.65,
+        "cluster_freq": 0.006
+      },
+      {
+        "tag": "photo editing: 21",
+        "lift": 14.65,
+        "cluster_freq": 0.009
+      },
+      {
+        "tag": "animation & modeling: 21",
+        "lift": 14.47,
+        "cluster_freq": 0.017
+      },
+      {
+        "tag": "photo editing",
+        "lift": 14.41,
+        "cluster_freq": 0.025
+      }
+    ]
+  },
+  {
+    "cluster": 1,
+    "size": 15353,
+    "top_tags_by_lift": [
+      {
+        "tag": "combat: 15",
+        "lift": 3.17,
+        "cluster_freq": 0.003
+      },
+      {
+        "tag": "action-adventure: 138",
+        "lift": 3.12,
+        "cluster_freq": 0.002
+      },
+      {
+        "tag": "side scroller: 29",
+        "lift": 3.08,
+        "cluster_freq": 0.001
+      },
+      {
+        "tag": "action: 316",
+        "lift": 3.07,
+        "cluster_freq": 0.002
+      },
+      {
+        "tag": "action: 64",
+        "lift": 3.05,
+        "cluster_freq": 0.009
+      }
+    ]
+  },
+  {
+    "cluster": 2,
+    "size": 13576,
+    "top_tags_by_lift": [
+      {
+        "tag": "text-based: 6",
+        "lift": 3.99,
+        "cluster_freq": 0.002
+      },
+      {
+        "tag": "text-based: 8",
+        "lift": 3.95,
+        "cluster_freq": 0.002
+      },
+      {
+        "tag": "steam cloud",
+        "lift": 3.59,
+        "cluster_freq": 0.964
+      },
+      {
+        "tag": "story rich: 71",
+        "lift": 3.06,
+        "cluster_freq": 0.001
+      },
+      {
+        "tag": "great soundtrack: 33",
+        "lift": 2.85,
+        "cluster_freq": 0.002
+      }
+    ]
+  },
+  {
+    "cluster": 3,
+    "size": 14060,
+    "top_tags_by_lift": [
+      {
+        "tag": "card game: 11",
+        "lift": 3.77,
+        "cluster_freq": 0.003
+      },
+      {
+        "tag": "logic: 28",
+        "lift": 3.7,
+        "cluster_freq": 0.002
+      },
+      {
+        "tag": "logic: 19",
+        "lift": 3.63,
+        "cluster_freq": 0.002
+      },
+      {
+        "tag": "building: 24",
+        "lift": 3.27,
+        "cluster_freq": 0.002
+      },
+      {
+        "tag": "adventure: 11",
+        "lift": 3.24,
+        "cluster_freq": 0.011
+      }
+    ]
+  },
+  {
+    "cluster": 4,
+    "size": 12112,
+    "top_tags_by_lift": [
+      {
+        "tag": "local co-op: 12",
+        "lift": 5.77,
+        "cluster_freq": 0.004
+      },
+      {
+        "tag": "4 player local: 13",
+        "lift": 5.77,
+        "cluster_freq": 0.003
+      },
+      {
+        "tag": "4 player local: 12",
+        "lift": 5.77,
+        "cluster_freq": 0.003
+      },
+      {
+        "tag": "shared/split screen co-op",
+        "lift": 5.75,
+        "cluster_freq": 0.254
+      },
+      {
+        "tag": "shared/split screen pvp",
+        "lift": 5.74,
+        "cluster_freq": 0.308
+      }
+    ]
+  },
+  {
+    "cluster": 5,
+    "size": 10069,
+    "top_tags_by_lift": [
+      {
+        "tag": "hidden object: 6",
+        "lift": 6.45,
+        "cluster_freq": 0.015
+      },
+      {
+        "tag": "hidden object: 5",
+        "lift": 5.97,
+        "cluster_freq": 0.006
+      },
+      {
+        "tag": "hidden object: 7",
+        "lift": 5.89,
+        "cluster_freq": 0.008
+      },
+      {
+        "tag": "point & click: 14",
+        "lift": 5.52,
+        "cluster_freq": 0.003
+      },
+      {
+        "tag": "point & click: 12",
+        "lift": 5.45,
+        "cluster_freq": 0.005
+      }
+    ]
+  }
+]

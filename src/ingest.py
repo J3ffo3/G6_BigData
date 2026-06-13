@@ -30,14 +30,17 @@ def run_ingestion(limit_files=None, sample_frac=1.0, random_state=42):
     if os.path.exists(metadata_file) and existing_reviews:
         print("Using existing raw files in data/raw. Skipping Kaggle download.")
     else:
-        missing_env_vars = [
-            var_name for var_name in ("KAGGLE_USERNAME", "KAGGLE_KEY") if not os.getenv(var_name)
-        ]
-        if missing_env_vars:
+        # Accept credentials from .env OR from ~/.kaggle/kaggle.json (kagglehub native)
+        kaggle_json = os.path.join(os.path.expanduser("~"), ".kaggle", "kaggle.json")
+        has_env_creds = os.getenv("KAGGLE_USERNAME") and os.getenv("KAGGLE_KEY")
+        has_json_creds = os.path.exists(kaggle_json)
+
+        if not has_env_creds and not has_json_creds:
             raise EnvironmentError(
-                "Missing Kaggle credentials in .env. "
-                f"Required variables: {', '.join(missing_env_vars)}. "
-                f"Expected file: {ENV_PATH}"
+                "Kaggle credentials not found. Provide one of:\n"
+                f"  1. .env file at {ENV_PATH} with KAGGLE_USERNAME and KAGGLE_KEY\n"
+                f"  2. kaggle.json at {kaggle_json} "
+                "(download from https://www.kaggle.com/settings -> API -> Create New Token)"
             )
 
         print("Downloading datasets from Kaggle...")
@@ -71,11 +74,11 @@ def run_ingestion(limit_files=None, sample_frac=1.0, random_state=42):
             raise ValueError("limit_files must be a positive integer when provided.")
         subset_files = all_files[:limit_files]
         output_name = "steam_v1.parquet"
-        print(f"🧪 Processing a sample of {len(subset_files)} files...")
+        print(f"[TEST] Processing a sample of {len(subset_files)} files...")
     elif sample_frac is None or sample_frac == 1:
         subset_files = all_files
         output_name = "steam_full.parquet"
-        print("✅ Processing full review dataset.")
+        print("Processing full review dataset.")
     else:
         if sample_frac <= 0 or sample_frac > 1:
             raise ValueError("sample_frac must be in the interval (0, 1] when provided.")
@@ -88,7 +91,7 @@ def run_ingestion(limit_files=None, sample_frac=1.0, random_state=42):
 
         if games_df["num_reviews_total"].nunique() < 4:
             sampled_games = games_df.sample(frac=sample_frac, random_state=random_state)
-            print("⚠️ Not enough unique review counts for quartiles. Using simple random sample.")
+            print("WARNING: Not enough unique review counts for quartiles. Using simple random sample.")
         else:
             games_df["popularity_bin"] = pd.qcut(
                 games_df["num_reviews_total"],
@@ -101,7 +104,7 @@ def run_ingestion(limit_files=None, sample_frac=1.0, random_state=42):
                 .apply(lambda frame: frame.sample(frac=sample_frac, random_state=random_state))
                 .reset_index(drop=True)
             )
-            print("✅ Stratified sampling by popularity (quartiles) applied.")
+            print("Stratified sampling by popularity (quartiles) applied.")
 
         sampled_appids = set(sampled_games["AppID"].tolist())
         subset_files = [
@@ -109,7 +112,7 @@ def run_ingestion(limit_files=None, sample_frac=1.0, random_state=42):
         ]
         output_name = "steam_v1.parquet"
         print(
-            f"🧪 Processing stratified sample: {len(subset_files)} files "
+            f"[TEST] Processing stratified sample: {len(subset_files)} files "
             f"({sample_frac:.0%} per popularity bin)."
         )
 
@@ -133,7 +136,7 @@ def run_ingestion(limit_files=None, sample_frac=1.0, random_state=42):
         list_df.append(temp_df)
 
     if failed_files:
-        print(f"⚠️ Skipped {len(failed_files)} unreadable review files.")
+        print(f"WARNING: Skipped {len(failed_files)} unreadable review files.")
         for file_path, error in failed_files[:5]:
             print(f"   - {file_path}: {error}")
 
@@ -153,7 +156,7 @@ def run_ingestion(limit_files=None, sample_frac=1.0, random_state=42):
     final_dataset.to_parquet(output_file, index=False)
 
     print(f"Dataset saved successfully at: {output_file}")
-    print(f"📊 Final Record Count: {len(final_dataset)}")
+    print(f"Final Record Count: {len(final_dataset)}")
     return output_file
 
 

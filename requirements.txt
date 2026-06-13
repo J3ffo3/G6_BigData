@@ -1,9 +1,10 @@
 pandas
 numpy
-pyarrow  
+pyarrow
 matplotlib
 seaborn
 scikit-learn
+scipy
 networkx
 kagglehub
 python-dotenv
