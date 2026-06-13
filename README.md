@@ -13,6 +13,12 @@
 
 ---
 
+### 🎥 Video de Presentación - Deliverable Week 10
+
+[![Ver Video](https://img.shields.io/badge/Google_Drive-Ver_Video_de_Presentación-blue?style=for-the-badge&logo=googledrive&logoColor=white)](https://drive.google.com/drive/folders/1fcErjY8ndvkZsQAQoWywGjd4v1vxQQsp?usp=sharing)
+
+*Haz clic en el botón de arriba para reproducir la demostración del entregable.*
+
 
 * **Problem Statement:** With over 80,000 titles available, the Steam platform faces an acute **"Choice Overload"** problem. Users typically gravitate toward high-budget (AAA) titles, while high-quality niche (Indie) games remain undiscovered. Traditional popularity-based ranking systems fail to capture latent connections between complex gameplay preferences and community-driven structures.
 * **Expected Product Question:** How can we improve game discovery through a hybrid system that leverages community-driven tag centrality within a graph and historical user behavior (playtime) to recommend titles with high satisfaction probability?
