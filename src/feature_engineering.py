@@ -1,16 +1,3 @@
-"""
-Week 5 - Reproducible Feature Engineering & Dimensionality Reduction Pipeline.
-
-Builds numeric, categorical, text, and temporal feature matrices from the Steam
-catalog and review aggregates, fits PCA on numeric features and TruncatedSVD on
-TF-IDF text features, computes reconstruction errors, and persists matrices,
-fitted models and metrics under ``artifacts/``.
-
-Run from project root:
-
-    python src/feature_engineering.py
-"""
-
 from __future__ import annotations
 
 import json

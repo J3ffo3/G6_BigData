@@ -1,29 +1,3 @@
-"""
-Week 7 - Prototype-Based Clustering Pipeline.
-
-Reproduces the K-means experiments reported in:
-    reports/Week7/Technical_report_G6_W7.pdf
-
-Pipeline stages
----------------
-1.  Load game catalog; filter to tagged games (~87,806 titles).
-2.  Build a tags-only binary matrix (genres + categories + tags, min_freq=30 -> ~493 dims).
-3.  Lloyd's manual descent verification (5 seeds, K=6, PCA-numeric 10D).
-4.  Ablation: raw-sparse vs SVD-only vs SVD+L2 (silhouette comparison).
-5.  K-sweep K in {4, 6, 8, 10} on the chosen SVD+L2 representation.
-6.  Final K=6 clustering, cluster profiles by tag lift, ARI stability (5 seeds).
-
-Artifacts written to artifacts/clustering/
-------------------------------------------
-    cluster_labels_k6.npy     - integer cluster label per tagged game
-    cluster_appids.npy        - AppID array aligned to the labels
-    clustering_metrics.json   - all numeric results (Lloyd's, ablation, sweep, ARI)
-    cluster_profiles.json     - top-5 tags by lift per cluster
-
-Run from project root:
-    python src/clustering_week7.py
-"""
-
 from __future__ import annotations
 
 import json

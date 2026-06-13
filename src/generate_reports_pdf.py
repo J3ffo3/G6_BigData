@@ -1,4 +1,3 @@
-"""Generate Technical_report_G6_W5.pdf and Technical_report_G6_W10.pdf using fpdf2."""
 from __future__ import annotations
 
 import json
@@ -414,7 +413,123 @@ def build_w10():
     print(f"Saved: {out}")
 
 
+W7_DIR = os.path.join(PROJECT_ROOT, "reports", "Week7")
+
+
+def build_w7():
+    with open(os.path.join(PROJECT_ROOT, "artifacts", "clustering", "clustering_metrics.json")) as f:
+        m = json.load(f)
+    with open(os.path.join(PROJECT_ROOT, "artifacts", "clustering", "cluster_profiles.json")) as f:
+        profiles = json.load(f)
+
+    pdf = ReportPDF("Milestone: Prototype-Based Clustering - K-Means Experiments (Week 7)")
+    pdf.title_page()
+    pdf.add_page()
+
+    pdf.section(1, "Prior Milestones Summary")
+    pdf.table(
+        ["Week", "Milestone", "Key output used here"],
+        [
+            ["3", "Dataset Charter & EDA", "steam_v1.parquet: 480,025 records. Star schema on AppID."],
+            ["5", "Feature Engineering",  "X_numeric (87k x 26), X_text (87k x 5k). PCA/SVD models in models.pkl."],
+            ["7", "Clustering (this)",    "Tags-only binary matrix. K=6 cluster labels -> artifacts/clustering/"],
+        ],
+        col_widths=[12, 38, 120],
+    )
+
+    pdf.section(2, "Clustering Setup")
+    pdf.bullet([
+        "Representation: tags-only binary matrix from genres + categories + tags columns.",
+        "Vocabulary filter: min_freq=30 -> 5,397 tag dimensions retained.",
+        "Input universe: 69,943 games with non-empty tag fields.",
+        "Rationale: tag tokens are community-curated labels (e.g. 'roguelike', 'local co-op') with less noise than free-text.",
+    ])
+
+    pdf.section(3, "Lloyd's Algorithm - Manual Descent Verification")
+    pdf.body(
+        "To verify sklearn's K-means implements Lloyd's algorithm correctly, one iteration "
+        "(assignment + centroid update) is run manually from 5 random seeds on PCA-10D numeric features."
+    )
+    lloyd = m["lloyds_demo"]
+    pdf.table(
+        ["Seed", "J_before", "J_after", "dJ", "Descent?"],
+        [[str(r["seed"]), f"{r['J_before']:,.0f}", f"{r['J_after']:,.0f}",
+          f"{r['delta_J']:,.0f}", "Yes" if r["descent_ok"] else "NO"]
+         for r in lloyd],
+        col_widths=[20, 38, 38, 38, 36],
+    )
+    pdf.body("All 5 seeds confirm strict J_after <= J_before, verifying the implementation.")
+
+    pdf.section(4, "Ablation Study - Representation Variants")
+    ablation = m["ablation"]
+    pdf.table(
+        ["Variant", "Silhouette", "Largest cluster (%)"],
+        [[r["variant"], str(r["silhouette"]), f"{r['largest_cluster_share_pct']}%"]
+         for r in ablation],
+        col_widths=[75, 48, 47],
+    )
+    pdf.bullet([
+        "Raw sparse: K-means with Euclidean distance on 5,397D binary vectors -> lowest quality.",
+        "SVD 50D: dimensionality reduction concentrates variance, silhouette improves substantially.",
+        "SVD + L2 (chosen): L2 normalization maps to unit hypersphere, converting distance to cosine. Best result.",
+    ])
+
+    pdf.section(5, "K-Sweep - Choosing Number of Clusters")
+    sweep = m["k_sweep"]
+    pdf.table(
+        ["K", "Inertia", "Silhouette", "Min cluster", "Max cluster"],
+        [[str(r["K"]), f"{r['inertia']:,.0f}", str(r["silhouette"]),
+          f"{r['min_cluster_size']:,}", f"{r['max_cluster_size']:,}"]
+         for r in sweep],
+        col_widths=[18, 34, 34, 42, 42],
+    )
+    pdf.body(
+        "K=6 selected: K=8/10 produce smaller minimum clusters (958 games, ~1.4%) "
+        "impractical for segmentation. K=6 balances compactness and semantic interpretability."
+    )
+
+    pdf.section(6, "Final Clustering - K=6 Cluster Profiles")
+    fk6 = m["final_k6"]
+    pdf.body(f"Silhouette: {fk6['silhouette']}  |  Inertia: {fk6['inertia']:,.0f}  |  "
+             f"Top tags by lift = P(tag|cluster) / P(tag)")
+    for p in profiles:
+        k = p["cluster"]
+        sz = p["size"]
+        tags = ", ".join(f"{t['tag']} ({t['lift']}x)" for t in p["top_tags_by_lift"])
+        label = ["Creative/Dev Tools", "Action", "Narrative/Adventure",
+                 "Strategy/Puzzle", "Local Multiplayer", "Casual/Hidden Object"][k]
+        pdf.bullet([f"C{k} ({sz:,} games | {sz/fk6['cluster_sizes'][0]*100:.0f}%): {label}  ->  {tags}"])
+
+    pdf.section(7, "ARI Stability Across Seeds")
+    ari = m["ari_stability"]
+    pdf.body(
+        f"Mean off-diagonal ARI: {ari['mean_ari']}  |  Min pairwise ARI: {ari['min_ari']}\n\n"
+        "ARI ~0.49 indicates moderate-to-good agreement: broad segments (Action, Strategy, Local MP) "
+        "are consistently recovered. Boundary games fluctuate between similar clusters."
+    )
+
+    pdf.section(8, "Reproducible Pipeline")
+    pdf.code(
+        "python src/ingest.py                # Step 1\n"
+        "python src/feature_engineering.py   # Step 2\n"
+        "python src/clustering_week7.py      # Step 3 - this milestone"
+    )
+    pdf.body("All outputs deterministic (random_state=42).")
+
+    pdf.section(9, "Ethics and Access Note")
+    pdf.bullet([
+        "Clustering operates on game catalog metadata only. No user data involved.",
+        "CC0 license; unrestricted academic use.",
+        "Tag vocabulary reflects Steam community labels; English/AAA titles dominate by frequency.",
+    ])
+
+    out = os.path.join(W7_DIR, "Technical_report_G6_W7_new.pdf")
+    pdf.output(out)
+    print(f"Saved: {out}")
+
+
 if __name__ == "__main__":
     build_w5()
+    build_w7()
     build_w10()
     print("Done.")

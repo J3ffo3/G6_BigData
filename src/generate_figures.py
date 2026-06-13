@@ -1,4 +1,3 @@
-"""Generate all report figures for Week 5 and Week 10."""
 from __future__ import annotations
 
 import json
